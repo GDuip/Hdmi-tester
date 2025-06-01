@@ -9,183 +9,549 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💻</text></svg>">
 </head>
 <body>
-    <div class="app-container">
-        <header class="app-header">
-            <div class="logo-title">
-                <span class="logo-icon">💻</span>
-                <h1>Advanced System & Display Inspector</h1>
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar">
+      <header class="sidebar-header">
+        <div class="logo-title" style="display: flex; align-items: center;">
+          <span class="logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path>
+            </svg>
+          </span>
+          <span class="sidebar-title">Inspector X</span>
+        </div>
+        <button class="sidebar-toggle-btn desktop-toggle" id="sidebarToggleDesktop" title="Toggle Sidebar Width" aria-label="Toggle Sidebar Width">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <nav class="sidebar-nav" role="navigation">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="#" class="nav-link active" data-target="display-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="21" x2="9" y2="9"></line>
+              </svg>
+              <span class="link-text">Display</span></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" data-target="system-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                <line x1="7" y1="2" x2="7" y2="22"></line>
+                <line x1="17" y1="2" x2="17" y2="22"></line>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <line x1="2" y1="7" x2="22" y2="7"></line>
+                <line x1="2" y1="17" x2="22" y2="17"></line>
+              </svg>
+              <span class="link-text">System & OS</span></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" data-target="hardware-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M22 17H2M8 21h8M12 17v4"></path>
+              </svg>
+              <span class="link-text">Hardware</span></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" data-target="media-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span class="link-text">Media</span></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" data-target="connectivity-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                <line x1="12" y1="20" x2="12.01" y2="20"></line>
+              </svg>
+              <span class="link-text">Connectivity</span></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" data-target="browser-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <span class="link-text">Browser</span></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" data-target="performance-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              <span class="link-text">Performance</span></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" data-target="apis-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+                <line x1="12" y1="2" x2="12" y2="4"></line>
+                <line x1="12" y1="20" x2="12" y2="22"></line>
+              </svg>
+              <span class="link-text">Advanced APIs</span></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" data-target="hdmi-info-panel" role="button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36,10.76,12,17.12,5.64,10.76" />
+                <line x1="12" y1="3" x2="12" y2="17.12" />
+              </svg> <!-- Simplified HDMI plug -->
+              <span class="link-text">HDMI Info</span></a></li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-controls">
+        <button id="copyReportBtn" class="icon-btn" title="Copy Full Report" aria-label="Copy Full Report">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span class="btn-text">Copy Report</span>
+        </button>
+        <button id="themeToggleBtn" class="icon-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <svg id="themeIconSun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg id="themeIconMoon" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <span class="btn-text">Toggle Theme</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="app-content-wrapper">
+      <header class="page-header">
+        <button class="mobile-sidebar-toggle" id="sidebarToggleMobile" aria-label="Toggle Mobile Sidebar Menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <h1>Dashboard</h1> <!-- This title can be dynamically updated based on active panel -->
+      </header>
+
+      <main class="app-main-content" role="main">
+        <div class="global-disclaimer">
+          <p><strong>Accuracy Note:</strong> This tool provides browser-based diagnostics. Hardware details like HDMI/HDCP versions are **not directly detectable**. Console/OS guesses are based on heuristics. For precise hardware analysis, use dedicated tools.</p>
+        </div>
+
+        <!-- Content Panels -->
+        <section id="display-panel" class="content-panel active" role="tabpanel">
+          <div class="content-section">
+            <h2>Core Display Info
+              <button id="loadMultiScreenBtn" class="action-btn action-btn-secondary" title="Requires Permission">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM4 18V6h3v1h2V6h2v1h2V6h2v1h2V6h3v12z" />
+                  <path d="M10 9H8v1h2V9zm4 0h-2v1h2V9z" />
+                </svg>
+                All Screens
+              </button>
+            </h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="card-label">Current Resolution</div>
+                <div id="currentResolution" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Viewport (Web Area)</div>
+                <div id="availableResolution" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Color Depth</div>
+                <div id="colorDepthVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Device Pixel Ratio</div>
+                <div id="pixelRatioVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Screen Orientation</div>
+                <div id="orientationVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Touch Support</div>
+                <div id="touchSupportVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">HDR Support (CSS Check)</div>
+                <div id="hdrStatusVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Color Gamut (CSS Check)</div>
+                <div id="colorGamutStatusVal" class="card-value">-</div>
+              </div>
             </div>
-            <div class="controls">
-                <button id="copy-report-btn" class="icon-btn" title="Copy Report"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
-                <button id="theme-toggle-btn" class="icon-btn" title="Toggle Theme"><svg id="theme-icon-sun" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM20 13h-2.07c-.06-.67-.18-1.32-.36-1.93l1.46-1.46c.39-.39.39-1.02 0-1.41l-1.43-1.43c-.39-.39-1.02-.39-1.41 0l-1.46 1.46C14.32 8.25 13.67 8.13 13 8.07V6c0-.55-.45-1-1-1s-1 .45-1 1v2.07c-.67.06-1.32.18-1.93.36l-1.46-1.46c-.39-.39-1.02-.39-1.41 0l-1.43 1.43c-.39.39-.39 1.02 0 1.41l1.46 1.46c-.18.61-.3.                                                                                                                                                       1.26-.36 1.93H4c-.55 0-1 .45-1 1s.45 1 1 1h2.07c.06.67.18 1.32.36 1.93l-1.46 1.46c-.39.39-.39 1.02 0 1.41l1.43 1.43c.39.39 1.02.39 1.41 0l1.46-1.46c.61.18 1.26.3 1.93.36V20c0 .55.45 1 1 1s1-.45 1-1v-2.07c.67-.06 1.32-.18 1.93-.36l1.46 1.46c.39.39 1.02.39 1.41 0l1.43-1.43c.39-.39.39-1.02 0-1.41l-1.46-1.46c.18-.61.3-1.26.36-1.93H20c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg><svg id="theme-icon-moon" style="display:none;" viewBox="0 0 24 24"><path d="M12.3 4.83A9.5 9.5 0 0 0 10.05 19.59a9.51 9.51 0 0 0 10.22-7.3c.09-.58-.37-1.1-.96-1.1H19c-4.48 0-8.22-3.53-8.7-7.96-.05-.43-.44-.72-.9-.7zm3.32 12.04a7.5 7.5 0 0 1-8.23-8.23c.1-.69.63-1.14 1.32-1.14.46 0 .88.25 1.1.65.83 1.5 2.35 2.61 4.12 2.93.5.09.88.52.88 1.03v.38c0 .82.33 1.59.91 2.17.58.58 1.35.91 2.17.91h.38c.51 0 .94.38 1.03.88.32 1.77 1.43 3.29 2.93 4.12.4.22.65.64.65 1.1 0 .69-.56 1.22-1.25 1.13z"/></svg></button>
+          </div>
+          <div class="content-section">
+            <h2>Refresh Rate Estimation
+              <button id="startRefreshRateTestBtn" class="action-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
+                </svg>
+                Start Test
+              </button>
+            </h2>
+            <div class="info-grid">
+              <div class="info-card full-span">
+                <div class="card-label">Estimated Display Rate</div>
+                <div id="estimatedFpsVal" class="card-value">- Hz</div>
+                <canvas id="fpsVisualizer"></canvas>
+                <p class="card-description">Based on browser `requestAnimationFrame` cycles. Best reflects display rate if browser animations are smooth.</p>
+              </div>
             </div>
-        </header>
+          </div>
+          <div id="multiScreenDetailsContainer" class="content-section" style="display:none;">
+            <h2>Extended Screen Details</h2>
+            <div id="multiScreenDetailsGrid" class="info-grid"></div>
+          </div>
+        </section>
 
-        <main class="app-main">
-            <div class="disclaimer-box">
-                <p><strong>Important:</strong> This tool inspects capabilities as reported by your browser and OS. <strong>It cannot directly test hardware like HDMI cable versions/speeds.</strong> Some information, especially OS and console detection, relies on hints and may not be 100% accurate. For precise hardware diagnostics, dedicated tools are necessary.</p>
+        <section id="system-panel" class="content-panel" role="tabpanel">
+          <div class="content-section">
+            <h2>Operating System & Platform</h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="card-label">Navigator.Platform</div>
+                <div id="osPlatformVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">OS (UserAgentData)</div>
+                <div id="osUadPlatformVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">OS Version (UserAgentData)</div>
+                <div id="osUadVersionVal" class="card-value code-text">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Architecture (UserAgentData)</div>
+                <div id="osUadArchVal" class="card-value">-</div>
+              </div>
+              <div class="info-card full-span">
+                <div class="card-label">Full User Agent String</div>
+                <div id="userAgentFullVal" class="card-value code-text">-</div>
+              </div>
+              <div class="info-card ">
+                <div class="card-label">Game Console (Hint)</div>
+                <div id="gameConsoleHintVal" class="card-value">-</div>
+                <p class="card-description">UA-based, not definitive.</p>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Battery Status</div>
+                <div id="batteryStatusVal" class="card-value">-</div>
+                <div id="batteryLevelBarContainer" class="progress-bar-container" style="display:none;">
+                  <div id="batteryLevelBar" class="progress-bar"></div>
+                </div>
+              </div>
             </div>
+          </div>
+        </section>
 
-            <nav class="tab-navigation">
-                <button class="tab-link active" data-tab="display">Display</button>
-                <button class="tab-link" data-tab="system">System & OS</button>
-                <button class="tab-link" data-tab="hardware">Hardware (Browser View)</button>
-                <button class="tab-link" data-tab="media">Media Capabilities</button>
-                <button class="tab-link" data-tab="connectivity">Connectivity</button>
-                <button class="tab-link" data-tab="browser">Browser</button>
-                <button class="tab-link" data-tab="hdmi">HDMI Info</button>
-            </nav>
-
-            <div id="tab-content-container">
-                <!-- Display Section -->
-                <section id="display-section" class="tab-panel active">
-                    <h2>Primary Display</h2>
-                    <div class="info-card-grid">
-                        <div class="info-card"><div class="card-label">Current Resolution</div><div id="current-resolution" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Available Resolution</div><div id="available-resolution" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Color Depth</div><div id="color-depth" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Pixel Ratio</div><div id="pixel-ratio" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Orientation</div><div id="orientation" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Touch Support</div><div id="touch-support" class="card-value">-</div></div>
-                    </div>
-
-                    <h2>Refresh Rate & HDR</h2>
-                    <div class="info-card-grid">
-                        <div class="info-card">
-                            <div class="card-label">Estimated Refresh Rate</div>
-                            <div id="estimated-fps" class="card-value">- Hz</div>
-                            <canvas id="fps-visualizer" width="200" height="50"></canvas>
-                            <button id="start-refresh-rate-test" class="action-button">Start Test</button>
-                        </div>
-                        <div class="info-card">
-                            <div class="card-label">HDR Support (CSS Query)</div>
-                            <div id="hdr-status" class="card-value">-</div>
-                        </div>
-                        <div class="info-card">
-                            <div class="card-label">Color Gamut (CSS Query)</div>
-                            <div id="color-gamut-status" class="card-value">-</div>
-                        </div>
-                    </div>
-
-                    <h2>Multi-Screen Details <button id="load-multi-screen" class="action-button-small">Load (needs permission)</button></h2>
-                    <div id="multi-screen-details" class="info-subgrid">
-                        <!-- JS will populate this -->
-                    </div>
-                </section>
-
-                <!-- System & OS Section -->
-                <section id="system-section" class="tab-panel">
-                     <h2>Operating System</h2>
-                     <div class="info-card-grid">
-                        <div class="info-card"><div class="card-label">Platform</div><div id="os-platform" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">OS UserAgentData</div><div id="os-uad-platform" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">OS Version (UAD)</div><div id="os-uad-version" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Architecture (UAD)</div><div id="os-uad-arch" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Full User Agent</div><div id="user-agent-full" class="card-value code-like">-</div></div>
-                        <div class="info-card">
-                            <div class="card-label">Game Console Hint (UA Parsed)</div>
-                            <div id="game-console-hint" class="card-value warning-value">-</div>
-                            <small>Highly unreliable. Based on User Agent string.</small>
-                        </div>
-                     </div>
-                </section>
-
-                <!-- Hardware (Browser View) Section -->
-                <section id="hardware-section" class="tab-panel">
-                    <h2>Hardware (As Seen by Browser)</h2>
-                    <div class="info-card-grid">
-                        <div class="info-card"><div class="card-label">CPU Logical Cores</div><div id="cpu-cores" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Device Memory (Approx.)</div><div id="device-memory" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">GPU (WebGL Renderer)</div><div id="gpu-renderer" class="card-value wide">-</div></div>
-                        <div class="info-card"><div class="card-label">WebGL Version</div><div id="webgl-version" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">WebGL ANGLE Renderer</div><div id="webgl-angle" class="card-value wide">-</div></div>
-                    </div>
-                    <h2>HDCP Status (for Browser EME Content)</h2>
-                     <div class="info-card-grid">
-                        <div class="info-card">
-                            <div class="card-label">EME HDCP Check (e.g., for Widevine)</div>
-                            <div id="eme-hdcp-status" class="card-value">-</div>
-                            <small>Indicates if browser *could* play HDCP-protected web content. NOT the HDMI link's hardware HDCP itself.</small>
-                        </div>
-                     </div>
-                </section>
-
-                <!-- Media Capabilities Section -->
-                <section id="media-section" class="tab-panel">
-                    <h2>Audio Devices <button id="load-audio-devices" class="action-button-small">List Devices (needs permission)</button></h2>
-                    <div id="audio-devices-list" class="info-subgrid"></div>
-
-                    <h2>Video Decoding Support <button id="check-video-codecs" class="action-button-small">Check Common Codecs</button></h2>
-                    <div id="video-codecs-support" class="info-subgrid"></div>
-
-                    <h2>Audio Decoding Support <button id="check-audio-codecs" class="action-button-small">Check Common Codecs</button></h2>
-                    <div id="audio-codecs-support" class="info-subgrid"></div>
-
-                    <h2>DRM Support (Encrypted Media Extensions) <button id="check-drm" class="action-button-small">Check Common Systems</button></h2>
-                    <div id="drm-support-list" class="info-subgrid"></div>
-                </section>
-
-                <!-- Connectivity Section -->
-                <section id="connectivity-section" class="tab-panel">
-                     <h2>Network Status</h2>
-                    <div class="info-card-grid">
-                        <div class="info-card"><div class="card-label">Online Status</div><div id="online-status" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Effective Connection Type</div><div id="connection-type" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Downlink (Estimate Mbps)</div><div id="connection-downlink" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">RTT (Estimate ms)</div><div id="connection-rtt" class="card-value">-</div></div>
-                    </div>
-                    <h2>Basic Download Speed Test</h2>
-                    <div class="info-card">
-                        <div class="card-label">Download Speed</div>
-                        <div id="speed-test-result" class="card-value">- Mbps</div>
-                        <div id="speed-test-progress" class="progress-bar-container" style="display:none;"><div class="progress-bar"></div></div>
-                        <button id="start-speed-test-btn" class="action-button">Start Test (5MB)</button>
-                        <small>Simple client-side test. Not a substitute for dedicated speed testing tools. Measures speed to this page's hosting.</small>
-                    </div>
-                </section>
-
-                <!-- Browser Section -->
-                <section id="browser-section" class="tab-panel">
-                    <h2>Browser Details</h2>
-                    <div class="info-card-grid">
-                        <div class="info-card"><div class="card-label">Browser Name & Version (UAD)</div><div id="browser-name-version-uad" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Rendering Engine (UAD)</div><div id="browser-engine-uad" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Mobile (UAD)</div><div id="browser-mobile-uad" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Preferred Language(s)</div><div id="browser-languages" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Cookies Enabled?</div><div id="cookies-enabled" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Java Enabled? (Legacy)</div><div id="java-enabled" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">WebAssembly Support</div><div id="wasm-support" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Service Worker Support</div><div id="serviceworker-support" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Geolocation API</div><div id="geolocation-api" class="card-value">-</div></div>
-                   </div>
-                   <h2>Storage</h2>
-                    <div class="info-card-grid">
-                        <div class="info-card"><div class="card-label">Storage Quota (Approx.)</div><div id="storage-quota" class="card-value">-</div></div>
-                        <div class="info-card"><div class="card-label">Storage Usage (Approx.)</div><div id="storage-usage" class="card-value">-</div></div>
-                    </div>
-                </section>
-
-                <!-- HDMI Info Section -->
-                <section id="hdmi-section" class="tab-panel">
-                    <h2>HDMI Specifics</h2>
-                    <div class="info-card warning-card">
-                        <div class="card-label">HDMI Version (e.g., 1.4, 2.0, 2.1)</div>
-                        <div class="card-value">NOT DETECTABLE VIA BROWSER</div>
-                        <p>Web browsers do not have access to the low-level hardware information required to determine the HDMI version negotiated between your display and source device. This is managed by your operating system's graphics drivers and the physical hardware.</p>
-                    </div>
-                    <div class="info-card warning-card">
-                        <div class="card-label">HDMI Cable Speed / Bandwidth</div>
-                        <div class="card-value">NOT DETECTABLE VIA BROWSER</div>
-                        <p>The physical properties of an HDMI cable, such as its maximum bandwidth (e.g., 18 Gbps, 48 Gbps), cannot be tested or determined by website code. Cable quality impacts the resolutions and refresh rates your setup can achieve, but the browser cannot inspect the cable itself.</p>
-                     </div>
-                </section>
+        <section id="hardware-panel" class="content-panel" role="tabpanel">
+          <div class="content-section">
+            <h2>Hardware (Browser View)</h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="card-label">CPU Logical Cores</div>
+                <div id="cpuCoresVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Device Memory (RAM Estimate)</div>
+                <div id="deviceMemoryVal" class="card-value">-</div>
+              </div>
+              <div class="info-card full-span">
+                <div class="card-label">GPU (WebGL Renderer)</div>
+                <div id="gpuRendererVal" class="card-value code-text">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">WebGL Major Version</div>
+                <div id="webglVersionVal" class="card-value">-</div>
+              </div>
+              <div class="info-card full-span">
+                <div class="card-label">WebGL ANGLE Backend (if applicable)</div>
+                <div id="webglAngleVal" class="card-value code-text">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Media Encryption (HDCP Hint)</div>
+                <div id="emeHdcpStatusVal" class="card-value">-</div>
+                <p class="card-description">Test for Widevine DM+HDCP-required policy.</p>
+              </div>
             </div>
-        </main>
+          </div>
+          <div class="content-section">
+            <h2>WebGL Extensions
+              <button id="loadWebGLExtensionsBtn" class="action-btn action-btn-secondary">
+                Load Extensions
+              </button>
+            </h2>
+            <div class="info-card full-span">
+              <div class="card-label">Supported WebGL Extensions</div>
+              <div id="webGlExtensionsList" class="card-value code-text" style="max-height: 300px;">Click "Load Extensions" to query.</div>
+            </div>
+          </div>
+        </section>
 
-        <footer class="app-footer">
-            <p>Advanced System & Display Inspector &copy; <span id="current-year"></span>. All information is for indicative purposes only.</p>
+        <section id="media-panel" class="content-panel" role="tabpanel">
+          <div class="content-section">
+            <h2>Audio & Video</h2>
+            <div class="info-grid">
+              <div class="info-card full-span">
+                <div class="card-header">
+                  <div class="card-label">Available Audio Output Devices</div><button id="loadAudioDevicesBtn" class="action-btn action-btn-secondary">List Devices</button>
+                </div>
+                <div id="audioDevicesList" class="list-display-container">
+                  <p>Click to enumerate.</p>
+                </div>
+              </div>
+              <div class="info-card full-span">
+                <div class="card-header">
+                  <div class="card-label">Common Video Codec Support (Decoding)</div><button id="checkVideoCodecsBtn" class="action-btn action-btn-secondary">Check Basic</button>
+                </div>
+                <div id="videoCodecsSupportList" class="list-display-container">
+                  <p>Click to test.</p>
+                </div>
+              </div>
+              <div class="info-card full-span">
+                <div class="card-header">
+                  <div class="card-label">Common Audio Codec Support (Decoding)</div><button id="checkAudioCodecsBtn" class="action-btn action-btn-secondary">Check Basic</button>
+                </div>
+                <div id="audioCodecsSupportList" class="list-display-container">
+                  <p>Click to test.</p>
+                </div>
+              </div>
+              <div class="info-card full-span">
+                <div class="card-header">
+                  <div class="card-label">DRM System Support (EME)</div><button id="checkDrmBtn" class="action-btn action-btn-secondary">Check Systems</button>
+                </div>
+                <div id="drmSupportList" class="list-display-container">
+                  <p>Click to test.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="connectivity-panel" class="content-panel" role="tabpanel">
+          <div class="content-section">
+            <h2>Network Status</h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="card-label">Online Connectivity</div>
+                <div id="onlineStatusVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Effective Connection Type</div>
+                <div id="connectionTypeVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Downlink Speed (Est.)</div>
+                <div id="connectionDownlinkVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Round Trip Time (RTT Est.)</div>
+                <div id="connectionRttVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Data Saver Mode Active</div>
+                <div id="connectionSaveDataVal" class="card-value">-</div>
+              </div>
+            </div>
+          </div>
+          <div class="content-section">
+            <h2>Basic Download "Speed Test"
+              <button id="startSpeedTestBtn" class="action-btn">Start Test</button>
+            </h2>
+            <div class="info-grid">
+              <div class="info-card full-span">
+                <div class="card-label">Estimated Download Speed</div>
+                <div id="speedTestResultVal" class="card-value">- Mbps</div>
+                <div id="speedTestProgressContainer" class="progress-bar-container" style="display:none;">
+                  <div id="speedTestProgressBar" class="progress-bar"></div>
+                </div>
+                <p class="card-description">Very basic client-side test downloading a temporary file from a public CDN. Results highly indicative, not a replacement for dedicated speed tests.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="browser-panel" class="content-panel" role="tabpanel">
+          <div class="content-section">
+            <h2>Core Browser Info</h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="card-label">Browser Name & Version (UAD)</div>
+                <div id="browserNameVersionUadVal" class="card-value">-</div>
+              </div>
+              <div class="info-card full-span">
+                <div class="card-label">Full UAD Brand List</div>
+                <div id="browserBrandsUadVal" class="card-value code-text">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Mobile Browser (UAD)</div>
+                <div id="browserMobileUadVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Preferred Language(s)</div>
+                <div id="browserLanguagesVal" class="card-value " -">
+                  <p class="card-description code-text">Set Languages here...</p>
+                </div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Cookies Enabled</div>
+                <div id="cookiesEnabledVal" class="card-value">-</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="performance-panel" class="content-panel" role="tabpanel">
+          <div class="content-section">
+            <h2>Client-Side Performance Insight</h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="card-label">Navigation Type (This Page)</div>
+                <div id="perfNavTypeVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Total Page Load Time</div>
+                <div id="perfLoadTimeVal" class="card-value">- ms</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Time to First Byte (TTFB)</div>
+                <div id="perfTtfbVal" class="card-value">- ms</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">DOM Interactive</div>
+                <div id="perfDomInteractiveVal" class="card-value">- ms</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">DOM Content Loaded Evt.</div>
+                <div id="perfDomLoadedVal" class="card-value">- ms</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">JS Heap Size Limit</div>
+                <div id="perfJsHeapLimitVal" class="card-value">- MB</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Total JS Heap Size</div>
+                <div id="perfJsHeapTotalVal" class="card-value">- MB</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Used JS Heap Size</div>
+                <div id="perfJsHeapUsedVal" class="card-value">- MB</div>
+              </div>
+            </div>
+            <p class="card-description">Metrics from `window.performance` API. Timings relative to this page's `navigationStart`.</p>
+          </div>
+        </section>
+
+        <section id="apis-panel" class="content-panel" role="tabpanel">
+          <div class="content-section">
+            <h2>Advanced Browser APIs Support</h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="card-label">WebAssembly</div>
+                <div id="wasmSupportVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Service Workers</div>
+                <div id="serviceWorkerSupportVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Geolocation API (Availability)</div>
+                <div id="geolocationApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Presentation API (Cast)</div>
+                <div id="presentationApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">WebXR API (VR/AR)</div>
+                <div id="webXrApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Gamepad API</div>
+                <div id="gamepadApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Keyboard Layout API</div>
+                <div id="keyboardApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Web Share API</div>
+                <div id="webShareApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Installed Related Apps API</div>
+                <div id="relatedAppsApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Idle Detection API</div>
+                <div id="idleDetectionApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Virtual Keyboard API</div>
+                <div id="virtualKeyboardApiVal" class="card-value">-</div>
+              </div>
+              <div class="info-card">
+                <div class="card-label">Content Indexing API</div>
+                <div id="contentIndexingApiVal" class="card-value">-</div>
+              </div>
+            </div>
+          </div>
+          <div class="content-section">
+            <h2>Font Access API (Local Fonts)
+              <button id="loadLocalFontsBtn" class="action-btn action-btn-secondary">
+                List Available Fonts (Requires Permission)
+              </button>
+            </h2>
+            <div class="info-card full-span">
+              <div class="card-label">Font Access API Status</div>
+              <div id="fontAccessApiStatusVal" class="card-value">-</div>
+              <div id="localFontsListContainer" class="list-display-container" style="display:none; max-height:300px; overflow-y:auto;">
+                <p>Attempting to list fonts...</p>
+              </div>
+              <p class="card-description">Experimental API. Behavior and permissions vary by browser.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="hdmi-info-panel" class="content-panel" role="tabpanel">
+          <div class="content-section">
+            <h2>HDMI Hardware Limitations (Browser Perspective)</h2>
+            <div class="info-grid">
+              <div class="info-card text-only-card">
+                <div class="card-label">HDMI Version Detection</div>
+                <div class="card-value value-warning">NOT DETECTABLE VIA BROWSER</div>
+                <p class="card-description">Browsers (JavaScript) cannot access low-level hardware link information like the specific HDMI protocol version (e.g., 1.4, 2.0b, 2.1) negotiated between your devices. This is managed at the OS/driver and physical hardware level.</p>
+              </div>
+              <div class="info-card text-only-card">
+                <div class="card-label">HDMI Cable Speed/Bandwidth Test</div>
+                <div class="card-value value-warning">NOT DETECTABLE VIA BROWSER</div>
+                <p class="card-description">The physical characteristics of an HDMI cable, including its certified bandwidth (e.g., 18Gbps for Premium High Speed, 48Gbps for Ultra High Speed), cannot be determined or tested by website code.</p>
+              </div>
+              <div class="info-card text-only-card">
+                <div class="card-label">Active HDCP Version (Hardware Link)</div>
+                <div class="card-value value-warning">NOT DETECTABLE VIA BROWSER</div>
+                <p class="card-description">While a hint for browser-based DRM capabilities is provided elsewhere, the precise HDCP version (e.g., HDCP 1.4, 2.2, 2.3) active on the physical HDMI connection is not exposed to web browsers for security reasons.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- End of Content Panels Wrapper -->
+        <div id="tooltip"></div>
+        <footer class="app-main-footer">
+          <p>Inspector Pro X &copy; <span id="currentYear"></span>. Providing browser-based insights. For educational and indicative purposes only.</p>
         </footer>
-    </div>
-    <script src="script.js"></script>
+      </main>
+    </div><!-- End app-content-wrapper -->
+  </div><!-- End app-shell -->
+
+      <script src="script.js"></script>
 </body>
 </html>
