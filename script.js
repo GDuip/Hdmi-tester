@@ -1,731 +1,790 @@
-// script.js
 document.addEventListener('DOMContentLoaded', () => {
-    const getEl = (id) => document.getElementById(id);
-    const querySel = (selector) => document.querySelector(selector);
-    const querySelAll = (selector) => document.querySelectorAll(selector);
+      const App = {
+          // --- Cache DOM Elements ---
+          elements: {
+            // Sidebar & Navigation
+            appSidebar: document.getElementById('appSidebar'),
+            sidebarToggleDesktop: document.getElementById('sidebarToggleDesktop'),
+            sidebarToggleMobile: document.getElementById('sidebarToggleMobile'),
+            navLinks: document.querySelectorAll('.app-sidebar .nav-link'),
+            pageTitle: document.querySelector('.page-header h1'),
+            contentPanels: document.querySelectorAll('.content-panel'),
+            // Theme & Controls
+            themeToggleBtn: document.getElementById('themeToggleBtn'),
+            themeIconSun: document.getElementById('themeIconSun'),
+            themeIconMoon: document.getElementById('themeIconMoon'),
+            copyReportBtn: document.getElementById('copyReportBtn'),
+            currentYear: document.getElementById('currentYear'),
+            tooltip: document.getElementById('tooltip'),
+            // Specific Buttons
+            loadMultiScreenBtn: document.getElementById('loadMultiScreenBtn'),
+            startRefreshRateTestBtn: document.getElementById('startRefreshRateTestBtn'),
+            loadAudioDevicesBtn: document.getElementById('loadAudioDevicesBtn'),
+            checkVideoCodecsBtn: document.getElementById('checkVideoCodecsBtn'),
+            checkAudioCodecsBtn: document.getElementById('checkAudioCodecsBtn'),
+            checkDrmBtn: document.getElementById('checkDrmBtn'),
+            startSpeedTestBtn: document.getElementById('startSpeedTestBtn'),
+            loadLocalFontsBtn: document.getElementById('loadLocalFontsBtn'),
+            loadWebGLExtensionsBtn: document.getElementById('loadWebGLExtensionsBtn'),
+          },
 
-    // --- Theme Toggle ---
-    const themeToggleBtn = getEl('theme-toggle-btn');
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    const sunIcon = getEl('theme-icon-sun');
-    const moonIcon = getEl('theme-icon-moon');
+          // --- Application State ---
+          state: {
+            currentTheme: localStorage.getItem('theme') || 'light',
+            isSidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
+            isMobileSidebarOpen: false,
+            isFpsEstimating: false,
+            fpsRafId: null,
+            fpsFrames: [],
+            fpsVisualizerFrames: Array(50).fill(0), // For consistent bar count
+            fpsLastFrameTime: performance.now(),
+            fpsVisualizerCtx: null,
+            tooltipTimeout: null,
+            webGlContext: null, // Store WebGL context
+          },
 
-    function updateThemeIcon(theme) {
-        if (theme === 'dark') {
-            if(sunIcon) sunIcon.style.display = 'none';
-            if(moonIcon) moonIcon.style.display = 'block';
-        } else {
-            if(sunIcon) sunIcon.style.display = 'block';
-            if(moonIcon) moonIcon.style.display = 'none';
-        }
-    }
-    updateThemeIcon(currentTheme);
-
-    if(themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', () => {
-            let theme = document.documentElement.getAttribute('data-theme');
-            theme = theme === 'light' ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            updateThemeIcon(theme);
-        });
-    }
-
-    // --- Tab Navigation ---
-    const tabLinks = querySelAll('.tab-link');
-    const tabPanels = querySelAll('.tab-panel');
-
-    tabLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            tabLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
-
-            const targetTab = link.getAttribute('data-tab');
-            tabPanels.forEach(panel => {
-                if (panel.id === `${targetTab}-section`) {
-                    panel.classList.add('active');
-                } else {
-                    panel.classList.remove('active');
-                }
-            });
-        });
-    });
-
-    // --- Utility functions ---
-    const setText = (id, value, statusClass = '') => {
-        const el = getEl(id);
-        if (el) {
-            el.textContent = value === undefined || value === null || value === '' ? 'N/A' : String(value);
-            el.className = 'card-value'; // Reset classes
-            if (statusClass) el.classList.add(statusCLASS); // Typo: statusClass - corrected below
-        }
-    };
-    // Corrected - typo statusCLASS
-    const setTextWithStatus = (id, value, status = '') => { // status can be 'success', 'warning', 'error'
-        const el = getEl(id);
-        if (el) {
+          // --- Utility Functions ---
+          getEl: (id) => document.getElementById(id), // Shortcut
+          setText: (id, value, {
+            className = 'card-value',
+            status = '',
+            isCode = false
+          } = {}) => {
+            const el = App.getEl(id);
+            if(!el) return;
             el.textContent = (value === undefined || value === null || String(value).trim() === '') ? 'N/A' : String(value);
-            el.className = 'card-value'; // Reset classes
-            if (status) el.classList.add(`text-${status}`);
-        }
-    };
-
-    const setHTML = (id, htmlContent) => {
-        const el = getEl(id);
-        if (el) el.innerHTML = htmlContent;
-    };
-    
-    const safeAccess = (obj, path, defaultValue = 'N/A') => {
-        try {
-            const value = path.split('.').reduce((o, k) => (o || {})[k], obj);
-            return value === undefined || value === null ? defaultValue : value;
-        } catch (e) {
-            return defaultValue;
-        }
-    };
-
-    // --- Modules for different info categories ---
-
-    const DisplayInfo = {
-        init() {
-            this.getPrimaryInfo();
-            this.getHDRStatus();
-            this.getColorGamut();
-            this.getTouchSupport();
-            if(getEl('start-refresh-rate-test')) getEl('start-refresh-rate-test').addEventListener('click', () => this.estimateRefreshRate());
-            if(getEl('load-multi-screen')) getEl('load-multi-screen').addEventListener('click', () => this.getMultiScreenDetails());
-            this.estimateRefreshRate(true); // Initial quick estimate
-        },
-        getPrimaryInfo() {
-            setText('current-resolution', `${screen.width} x ${screen.height}`);
-            setText('available-resolution', `${screen.availWidth} x ${screen.availHeight}`);
-            setText('color-depth', `${screen.colorDepth} bits`);
-            setText('pixel-ratio', window.devicePixelRatio || 'N/A');
-            if (screen.orientation) {
-                setText('orientation', screen.orientation.type);
-                screen.orientation.addEventListener('change', () => setText('orientation', screen.orientation.type));
+            el.className = className; // Base class is just card-value
+            if(isCode) el.classList.add('code-text');
+            if(status) el.classList.add(`value-${status}`); // e.g., value-success, value-warning
+          },
+          setHTMLList: (containerId, itemsArray, itemClass = 'list-item', emptyMessage = 'No items found.') => {
+            const container = App.getEl(containerId);
+            if(!container) return;
+            if(itemsArray && itemsArray.length > 0) {
+              container.innerHTML = itemsArray.map(item => `<div class="${itemClass}">${item}</div>`).join('');
             } else {
-                setText('orientation', 'API not supported');
+              container.innerHTML = `<div class="${itemClass}">${emptyMessage}</div>`;
             }
-        },
-        getTouchSupport() {
-            let touchSupport = 'No';
-            if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || (window.DocumentTouch && document instanceof DocumentTouch)) {
-                 touchSupport = `Yes (${navigator.maxTouchPoints || 'unknown'} touch points)`;
+          },
+          checkAPISupport: (condition, id, featureName, availability = true) => { // availability for things like Geolocation
+            const baseText = availability ? (condition ? 'Supported' : 'Not Supported') : (condition ? 'Available' : 'Not Available');
+            App.setText(id, baseText, {
+              status: condition ? 'success' : 'warning'
+            }); // Warning for not supported/available maybe better
+            return !!condition; // Ensure boolean return
+          },
+          handleErrorText: (id, message = 'Error or N/A') => App.setText(id, message, {
+            status: 'error'
+          }),
+
+
+          // --- Initialization ---
+          init() {
+            this.Theme.init();
+            this.Sidebar.init(); // Handles desktop and mobile toggle
+            this.Navigation.init();
+            this.Tooltips.init();
+
+            // Initialize information modules
+            this.Display.init();
+            this.SystemOS.init();
+            this.Hardware.init();
+            this.Media.init();
+            this.Connectivity.init();
+            this.Browser.init();
+            this.Performance.init();
+            this.AdvancedAPIs.init(); // New module for the extra APIs grouping
+
+            if(this.elements.currentYear) this.elements.currentYear.textContent = new Date().getFullYear();
+            console.log("Inspector Pro X Initialized.");
+          },
+
+          // --- Modules (Object-Based Namespacing) ---
+          Theme: {
+            init() {
+              document.documentElement.setAttribute('data-theme', App.state.currentTheme);
+              App.Theme.updateIcon(App.state.currentTheme);
+              App.elements.themeToggleBtn?.addEventListener('click', App.Theme.toggle);
+            },
+            toggle() {
+              App.state.currentTheme = (App.state.currentTheme === 'light') ? 'dark' : 'light';
+              document.documentElement.setAttribute('data-theme', App.state.currentTheme);
+              localStorage.setItem('theme', App.state.currentTheme);
+              App.Theme.updateIcon(App.state.currentTheme);
+              if(App.state.fpsVisualizerCtx) App.Display.drawFpsVisualizer(); // Redraw with new theme colors
+            },
+            updateIcon(theme) {
+              if(App.elements.themeIconSun && App.elements.themeIconMoon) {
+                App.elements.themeIconSun.style.display = (theme === 'light') ? 'block' : 'none';
+                App.elements.themeIconMoon.style.display = (theme === 'dark') ? 'block' : 'none';
+              }
             }
-            setTextWithStatus('touch-support', touchSupport, navigator.maxTouchPoints > 0 ? 'success' : '');
-        },
-        getHDRStatus() {
-            let status = 'Not Detected / Not Supported';
-            if (window.matchMedia) {
-                if (window.matchMedia('(dynamic-range: high)').matches) {
-                    status = 'Supported (dynamic-range: high)';
-                    setTextWithStatus('hdr-status', status, 'success'); return;
+          },
+
+          Sidebar: {
+            init() {
+              // Desktop Toggle
+              App.elements.sidebarToggleDesktop?.addEventListener('click', () => {
+                App.state.isSidebarCollapsed = !App.state.isSidebarCollapsed;
+                App.elements.appSidebar?.classList.toggle('collapsed', App.state.isSidebarCollapsed);
+                localStorage.setItem('sidebarCollapsed', App.state.isSidebarCollapsed);
+              });
+              // Apply initial collapsed state on desktop
+              if(window.innerWidth > 768) { // Only apply stored collapse state on larger screens
+                App.elements.appSidebar?.classList.toggle('collapsed', App.state.isSidebarCollapsed);
+              }
+
+
+              // Mobile Toggle
+              App.elements.sidebarToggleMobile?.addEventListener('click', () => {
+                App.state.isMobileSidebarOpen = !App.state.isMobileSidebarOpen;
+                App.elements.appSidebar?.classList.toggle('open', App.state.isMobileSidebarOpen);
+                if(App.state.isMobileSidebarOpen && App.elements.appSidebar.classList.contains('collapsed')) {
+                  // If opening on mobile AND it was collapsed from desktop state, un-collapse it.
+                  App.elements.appSidebar.classList.remove('collapsed');
                 }
-                 if (window.matchMedia('(dynamic-range: standard)').matches) { // Some browsers may only report this
-                    status = 'Standard Dynamic Range (SDR)';
+              });
+
+              // Close mobile sidebar if clicking outside (optional)
+              document.addEventListener('click', (event) => {
+                if(App.state.isMobileSidebarOpen &&
+                  !App.elements.appSidebar.contains(event.target) &&
+                  !App.elements.sidebarToggleMobile.contains(event.target)) {
+                  App.state.isMobileSidebarOpen = false;
+                  App.elements.appSidebar.classList.remove('open');
                 }
-            }
-             setTextWithStatus('hdr-status', status);
-        },
-        getColorGamut() {
-            let gamut = 'sRGB (or unknown)';
-            if (window.matchMedia) {
-                if (window.matchMedia('(color-gamut: rec2020)').matches) gamut = 'Rec.2020 (Wide Gamut)';
-                else if (window.matchMedia('(color-gamut: p3)').matches) gamut = 'Display P3 (Wide Gamut)';
-                else if (window.matchMedia('(color-gamut: srgb)').matches) gamut = 'sRGB';
-            }
-            setTextWithStatus('color-gamut-status', gamut, gamut.includes('Wide') ? 'success' : '');
-        },
-        frames: [],
-        lastFrameTime: performance.now(),
-        rafId: null,
-        isEstimatingFps: false,
-        estimateRefreshRate(quickEstimate = false) {
-            if (this.isEstimatingFps && !quickEstimate) return;
-            this.isEstimatingFps = true;
+              });
 
-            const fpsEl = getEl('estimated-fps');
-            const visualizerCanvas = getEl('fps-visualizer');
-            this.ctx = visualizerCanvas ? visualizerCanvas.getContext('2d') : null;
-            this.frames = [];
-            this.framesDisplay = Array(50).fill(0) // For visualizer
-            
-            if(!quickEstimate){
-                 fpsEl.textContent = 'Testing...';
-                if(getEl('start-refresh-rate-test')) getEl('start-refresh-rate-test').disabled = true;
-            }
 
-            let frameCount = 0;
-            const testDuration = quickEstimate ? 500 : 2000; //ms
-            const startTime = performance.now();
-
-            const animate = (currentTime) => {
-                frameCount++;
-                const deltaTime = currentTime - this.lastFrameTime;
-                this.lastFrameTime = currentTime;
-                if (deltaTime > 0) {
-                    const currentFPS = 1000 / deltaTime;
-                    this.frames.push(currentFPS);
-                    if (this.frames.length > 100) this.frames.shift(); // Keep last 100 frames for averaging
-
-                     // Update visualizer data
-                    this.framesDisplay.push(currentFPS);
-                    if (this.framesDisplay.length > 50) this.framesDisplay.shift();
+              // Resize listener to handle collapsing logic better for desktop/mobile views
+              window.addEventListener('resize', () => {
+                if(window.innerWidth > 768) { // Desktop
+                  App.elements.appSidebar.classList.remove('open'); // Ensure mobile 'open' class is removed
+                  App.state.isMobileSidebarOpen = false;
+                  // Re-apply desktop collapsed state if it was set
+                  App.elements.appSidebar.classList.toggle('collapsed', App.state.isSidebarCollapsed === true);
+                } else { // Mobile
+                  // If sidebar was desktop-collapsed, it should remain logically collapsed (icon only mode)
+                  // but can still be forced 'open' physically with the 'open' class for mobile.
+                  // The 'collapsed' class primarily controls the text visibility and padding here for mobile logic.
+                  // App.elements.appSidebar.classList.remove('collapsed'); // Generally, mobile doesn't benefit from forced icon-only IF open.
                 }
-                this.drawFpsVisualizer();
-
-                if (currentTime - startTime < testDuration) {
-                    this.rafId = requestAnimationFrame(animate);
-                } else {
-                    this.isEstimatingFps = false;
-                    const avgFps = this.frames.length > 0 ? this.frames.reduce((a, b) => a + b, 0) / this.frames.length : 0;
-                    fpsEl.textContent = `${Math.round(avgFps)} Hz (Avg)`;
-                     if(!quickEstimate && getEl('start-refresh-rate-test')) getEl('start-refresh-rate-test').disabled = false;
-                    this.frames = []; // Clear for next test
-                }
-            };
-            if (this.rafId) cancelAnimationFrame(this.rafId);
-            this.rafId = requestAnimationFrame(animate);
-        },
-        drawFpsVisualizer() {
-            if (!this.ctx) return;
-            const canvas = this.ctx.canvas;
-            const W = canvas.width;
-            const H = canvas.height;
-            this.ctx.clearRect(0, 0, W, H);
-            const barWidth = W / this.framesDisplay.length;
-            const maxFpsGraph = 150; // Max FPS for graph scaling
-
-            this.ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#1877f2';
-
-            for (let i = 0; i < this.framesDisplay.length; i++) {
-                const val = this.framesDisplay[i] || 0;
-                const barHeight = Math.min(H, (val / maxFpsGraph) * H);
-                this.ctx.fillRect(i * barWidth, H - barHeight, barWidth - 1, barHeight);
+              });
+              // Trigger resize once to set initial state correctly based on width AND stored preference
+              window.dispatchEvent(new Event('resize'));
             }
-        },
-        async getMultiScreenDetails() {
-            const container = getEl('multi-screen-details');
-            const button = getEl('load-multi-screen');
-            if(!container || !button) return;
+          },
 
-            button.disabled = true; button.textContent = 'Loading...';
-            container.innerHTML = '<p>Requesting permission for screen details...</p>';
-            try {
-                if (!('getScreenDetails' in window) && !('windowManagement' in navigator && navigator.windowManagement.getScreenDetails)) {
-                    container.innerHTML = '<p class="text-warning">Multi-Screen Detail API (getScreenDetails or windowManagement) not supported by this browser.</p>';
-                    return;
-                }
-
-                let screenDetails;
-                 if (typeof window.getScreenDetails === 'function') {
-                    screenDetails = await window.getScreenDetails();
-                } else if (navigator.windowManagement && typeof navigator.windowManagement.getScreenDetails === 'function') {
-                    screenDetails = await navigator.windowManagement.getScreenDetails(); // Older path
-                } else {
-                     container.innerHTML = '<p class="text-error">Screen Details API not found though initially detected.</p>';
-                     return;
-                }
-
-
-                const renderScreenInfo = (details) => {
-                    container.innerHTML = ''; // Clear
-                     if (!details.screens || details.screens.length === 0) {
-                        container.innerHTML = '<p>No extended screen information available or permission denied.</p>';
-                        return;
-                    }
-                    details.screens.forEach((s, index) => {
-                        const card = document.createElement('div');
-                        card.className = 'info-card';
-                        card.innerHTML = `
-                            <div class="card-label">Screen ${index + 1} ${s.isPrimary ? '<strong class="text-success">(Primary)</strong>' : ''} ${s.isInternal ? '(Internal)' : '(External)'}</div>
-                            <p><strong>ID Guess:</strong> ${s.label || s.id || `Screen ${index+1}` }</p>
-                            <p><strong>Resolution:</strong> ${s.width}x${s.height} @ ${s.colorDepth}bit</p>
-                            <p><strong>Available:</strong> ${s.availWidth}x${s.availHeight}</p>
-                            <p><strong>Pixel Ratio:</strong> ${s.devicePixelRatio}</p>
-                            <p><strong>Orientation:</strong> ${s.orientation ? s.orientation.type : 'N/A'}</p>
-                        `;
-                        container.appendChild(card);
-                    });
-                };
-
-                renderScreenInfo(screenDetails);
-                screenDetails.addEventListener('screenschange', () => renderScreenInfo(screenDetails)); // Handle changes
-
-            } catch (err) {
-                console.error("Multi-screen error:", err);
-                container.innerHTML = `<p class="text-error">Error accessing screen details: ${err.message}. Ensure permission is granted.</p>`;
-            } finally {
-                button.disabled = false; button.textContent = 'Reload (needs permission)';
-            }
-        }
-    };
-
-    const SystemInfo = {
-        init() {
-            this.getOSInfo();
-        },
-        getOSInfo() {
-            setText('os-platform', navigator.platform || 'N/A');
-            setText('user-agent-full', navigator.userAgent || 'N/A');
-
-            if (navigator.userAgentData) {
-                const uad = navigator.userAgentData;
-                setText('os-uad-platform', uad.platform || 'N/A');
-                setText('os-uad-version', uad.platformVersion || 'N/A'); // This can be Windows Build no.
-                setText('os-uad-arch', uad.architecture || 'N/A');
-                
-                // Windows detailed version from UAD TBD - requires mapping build numbers
-                 if (uad.platform === "Windows" && uad.platformVersion) {
-                    const build = parseInt(uad.platformVersion.split('.')[2]);
-                    let winVer = "Windows";
-                    if (build >= 22000) winVer = "Windows 11";
-                    else if (build >= 10240 ) winVer = "Windows 10"; // Simplified
-                    // could add more precise build to (22H2 etc strings)
-                    setText('os-uad-version', `${uad.platformVersion} (${winVer} family)`);
-                }
-
-
-            } else {
-                setText('os-uad-platform', 'UserAgentData API not supported');
-                setText('os-uad-version', 'N/A');
-                setText('os-uad-arch', 'N/A');
-            }
-
-            // Game Console Hint (very basic)
-            const ua = navigator.userAgent.toLowerCase();
-            let consoleHint = 'Not Detected';
-            if (ua.includes('playstation 5') || ua.includes('ps5')) consoleHint = 'PlayStation 5 (Hint)';
-            else if (ua.includes('playstation 4') || ua.includes('ps4')) consoleHint = 'PlayStation 4 (Hint)';
-            else if (ua.includes('playstation 3') || ua.includes('ps3')) consoleHint = 'PlayStation 3 (Hint)';
-            else if (ua.includes('xbox')) consoleHint = 'Xbox (Hint)';
-            else if (ua.includes('nintendo switch') || ua.includes('nintendo wiiu')) consoleHint = 'Nintendo Console (Hint)';
-            
-            setTextWithStatus('game-console-hint', consoleHint, consoleHint !== 'Not Detected' ? 'warning' : '');
-
-        }
-    };
-
-    const HardwareInfo = {
-        init() {
-            this.getCPUInfo();
-            this.getMemoryInfo();
-            this.getGPUInfo();
-            this.checkEMEHDCP();
-        },
-        getCPUInfo() {
-            setText('cpu-cores', navigator.hardwareConcurrency || 'N/A');
-        },
-        getMemoryInfo() {
-            setText('device-memory', navigator.deviceMemory ? `${navigator.deviceMemory} GB (Approx.)` : 'N/A');
-        },
-        getGPUInfo() {
-            const canvas = document.createElement('canvas');
-            let gl;
-            try {
-                 gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            } catch (e) {}
-
-            if (gl) {
-                setText('webgl-version', gl.getParameter(gl.VERSION));
-                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                if (debugInfo) {
-                    setText('gpu-renderer', gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'N/A');
-                    // Get ANGLE backend if relevant (Windows mostly)
-                    if (navigator.platform.startsWith('Win') && gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL).toLowerCase().includes('angle')) {
-                         const angleBackendMatch = (gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)).match(/ANGLE \((.*?) Direct3D(.*?) (vs_\d_0 ps_\d_0)\)/i);
-                         if (angleBackendMatch && angleBackendMatch[1] && angleBackendMatch[2]) {
-                            setText('webgl-angle', `ANGLE on Direct3D ${angleBackendMatch[2].trim()} (${angleBackendMatch[1].trim()})`);
-                         } else {
-                            setText('webgl-angle', "Detected via ANGLE (details unavailable)");
-                         }
-                    } else {
-                        setText('webgl-angle', 'N/A (Not ANGLE or not detectable)');
-                    }
-
-                } else {
-                    setText('gpu-renderer', 'Debug info not available');
-                     setText('webgl-angle', 'N/A');
-                }
-            } else {
-                setText('webgl-version', 'WebGL not supported', 'error');
-                setText('gpu-renderer', 'N/A');
-                setText('webgl-angle', 'N/A');
-            }
-        },
-        async checkEMEHDCP() {
-            const el = getEl('eme-hdcp-status');
-            if (!el) return;
-            if (!navigator.requestMediaKeySystemAccess) {
-                el.textContent = 'EME API not supported.';
-                el.className = 'card-value text-warning';
-                return;
-            }
-
-            // Check Widevine, as it's common and often requires HDCP
-            const config = [{
-                initDataTypes: ['cenc'], // 'keyids', 'webm' also common
-                audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }],
-                videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.42E01E"', /* HDCP requirements can be added here */ hdcp: 'required' }], // Try 'required'
-            }];
-
-            try {
-                el.textContent = 'Checking...';
-                // Try requiring HDCP first
-                await navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{...config[0], videoCapabilities: [{contentType: 'video/mp4; codecs="avc1.42E01E"', hdcp: 'required'}]}]);
-                el.textContent = 'HDCP "required" satisfied for Widevine (e.g., HD/4K content should be playable).';
-                el.className = 'card-value text-success';
-            } catch (e1) {
-                 try {
-                     // Try with optional HDCP if required failed
-                    await navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{...config[0], videoCapabilities: [{contentType: 'video/mp4; codecs="avc1.42E01E"', hdcp: 'optional'}]}]);
-                    el.textContent = 'HDCP "optional" satisfied for Widevine (SD content likely, HD/4K might be restricted if actual HDCP level is low/absent).';
-                    el.className = 'card-value text-warning';
-                }
-                 catch (e2) {
-                    console.warn("EME HDCP check error (optional):", e2);
-                    el.textContent = 'EME Test for Widevine failed or HDCP not met even optionally. Encrypted content playback might be limited.';
-                    el.className = 'card-value text-error';
-                }
-            }
-        },
-    };
-
-    const MediaCapabilitiesInfo = {
-        init() {
-           if(getEl('load-audio-devices')) getEl('load-audio-devices').addEventListener('click', () => this.getAudioDevices());
-           if(getEl('check-video-codecs')) getEl('check-video-codecs').addEventListener('click', () => this.checkVideoCodecs());
-           if(getEl('check-audio-codecs')) getEl('check-audio-codecs').addEventListener('click', () => this.checkAudioCodecs());
-           if(getEl('check-drm')) getEl('check-drm').addEventListener('click', () => this.checkDRMSupport());
-        },
-        async getAudioDevices() {
-            const listEl = getEl('audio-devices-list');
-            if (!listEl) return;
-            listEl.innerHTML = '<p>Requesting permission for audio devices...</p>';
-            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-                listEl.innerHTML = '<p class="text-warning">MediaDevices API not supported.</p>';
-                return;
-            }
-            try {
-                await navigator.mediaDevices.getUserMedia({audio: true}); // Request permission
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput');
-                if (audioOutputDevices.length > 0) {
-                    listEl.innerHTML = audioOutputDevices.map(device =>
-                        `<div class="info-card">
-                            <p><strong>${device.label || `Device ID: ${device.deviceId.substring(0,10)}...`}</strong></p>
-                            <p>(Kind: ${device.kind}, Group: ${device.groupId.substring(0,10)}...)</p>
-                         </div>`
-                    ).join('');
-                } else {
-                    listEl.innerHTML = '<p>No audio output devices found or permission denied.</p>';
-                }
-            } catch (err) {
-                console.error("Audio devices error:", err);
-                listEl.innerHTML = `<p class="text-error">Error getting audio devices: ${err.message}. Ensure microphone permission is granted if prompted (needed to enumerate all audio devices).</p>`;
-            }
-        },
-        async checkVideoCodec(codecConfig, name, container) {
-             if (!('mediaCapabilities' in navigator)) {
-                container.innerHTML += `<div class="info-card"><p><strong>${name}:</strong> MediaCapabilities API not supported.</p></div>`;
-                return;
-            }
-            try {
-                const { supported, smooth, powerEfficient } = await navigator.mediaCapabilities.decodingInfo(codecConfig);
-                let statusText;
-                let statusClass;
-                if (supported) {
-                    statusText = `Supported (Smooth: ${smooth}, Power Efficient: ${powerEfficient})`;
-                    statusClass = 'text-success';
-                } else {
-                    statusText = 'Not Supported';
-                    statusClass = 'text-error';
-                }
-                 container.innerHTML += `<div class="info-card"><p><strong class="${statusClass}">${name}:</strong> ${statusText}</p><small><code>${codecConfig.video ? codecConfig.video.contentType : codecConfig.audio.contentType}</code></small></div>`;
-            } catch (e) {
-                 container.innerHTML += `<div class="info-card"><p><strong class="text-error">${name}:</strong> Error checking (${e.message})</p></div>`;
-            }
-        },
-        async checkVideoCodecs() {
-            const container = getEl('video-codecs-support');
-            if (!container) return;
-            container.innerHTML = '<p>Checking common video codecs...</p>';
-            const codecs = [
-                { name: 'H.264 (AVC) - 기본', type: 'video', config: { contentType: 'video/mp4; codecs="avc1.42E01E"' } },
-                { name: 'H.265 (HEVC) - Main', type: 'video', config: { contentType: 'video/mp4; codecs="hvc1.1.6.L93.B0"' } }, // Main profile, Level 3.1
-                { name: 'VP9 - Profile 0', type: 'video', config: { contentType: 'video/webm; codecs="vp09.00.10.08"' } },
-                { name: 'AV1 - Main', type: 'video', config: { contentType: 'video/mp4; codecs="av01.0.04M.08"' } },
-                { name: 'H.264 (AVC) - 4K', type: 'video', config: { contentType: 'video/mp4; codecs="avc1.640028"', width: 3840, height: 2160, bitrate: 20000000, framerate: 30 } },
-                { name: 'HEVC HDR10', type: 'video', config: { contentType: 'video/mp4; codecs="hvc1.2.4.L153.B0"; eotf="smpte2084"', /* hdrMetadataType: "hdr10plus" - for HDR10+ if interested */ width:1920, height:1080, bitrate: 10000000, framerate:30}},
-            ];
-            for (const codec of codecs) {
-                await this.checkVideoCodec({ type: codec.type, video: codec.config }, codec.name, container);
-            }
-        },
-         async checkAudioCodecs() {
-            const container = getEl('audio-codecs-support');
-            if (!container) return;
-            container.innerHTML = '<p>Checking common audio codecs...</p>';
-            const codecs = [
-                { name: 'AAC-LC', type: 'audio', config: { contentType: 'audio/mp4; codecs="mp4a.40.2"' } },
-                { name: 'Opus', type: 'audio', config: { contentType: 'audio/webm; codecs="opus"' } },
-                { name: 'FLAC', type: 'audio', config: { contentType: 'audio/flac' } },
-                { name: 'MP3', type: 'audio', config: { contentType: 'audio/mpeg' } },
-                { name: 'Dolby Digital (AC-3) - via E-AC-3 JOC for Atmos hints on some platforms', type: 'audio', config: { contentType: 'audio/mp4; codecs="ec-3"' } }, // browsers mostly support decoding this for web content, not passthrough necessarily
-            ];
-             for (const codec of codecs) {
-                await this.checkVideoCodec({ type: codec.type, audio: codec.config }, codec.name, container); // Reusing video method
-            }
-        },
-        async checkDRMSupport() {
-            const listEl = getEl('drm-support-list');
-            if (!listEl) return;
-            listEl.innerHTML = '<p>Checking DRM support...</p>';
-            if (!navigator.requestMediaKeySystemAccess) {
-                listEl.innerHTML = '<p class="text-warning">MediaKeySystemAccess API not supported.</p>';
-                return;
-            }
-            const systems = [
-                { name: 'Widevine', id: 'com.widevine.alpha' },
-                { name: 'PlayReady', id: 'com.microsoft.playready' },
-                { name: 'FairPlay', id: 'com.apple.fps.1_0' } // Usually Safari only
-                // { name: 'Clear Key', id: 'org.w3.clearkey' } // Test DRM
-            ];
-            let foundAny = false;
-            for (const system of systems) {
-                try {
-                    await navigator.requestMediaKeySystemAccess(system.id, [{ videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.42E01E"' }] }]);
-                    listEl.innerHTML += `<div class="info-card"><p><strong class="text-success">${system.name}:</strong> Supported</p></div>`;
-                    foundAny = true;
-                } catch (e) {
-                    listEl.innerHTML += `<div class="info-card"><p><strong>${system.name}:</strong> Not Supported or Error</p></div>`;
-                }
-            }
-            if (!foundAny && listEl.innerHTML.includes('Checking DRM')) listEl.innerHTML = "<p>No major DRM systems detected as supported.</p>";
-        }
-    };
-
-    const ConnectivityInfo = {
-        init() {
-            this.getNetworkStatus();
-            if(getEl('start-speed-test-btn')) getEl('start-speed-test-btn').addEventListener('click', () => this.startSpeedTest());
-             window.addEventListener('online', () => this.getNetworkStatus(true));
-            window.addEventListener('offline', () => this.getNetworkStatus(false));
-            if(navigator.connection) {
-                navigator.connection.addEventListener('change', () => this.getNetworkStatus());
-            }
-        },
-        getNetworkStatus(forceOnlineState = null) {
-            const online = forceOnlineState !== null ? forceOnlineState : navigator.onLine;
-            setTextWithStatus('online-status', online ? 'Online' : 'Offline', online ? 'success' : 'error');
-
-            if (navigator.connection) {
-                setText('connection-type', navigator.connection.effectiveType || 'N/A');
-                setText('connection-downlink', navigator.connection.downlink ? `${navigator.connection.downlink} Mbps (Effective)`: 'N/A');
-                setText('connection-rtt', navigator.connection.rtt ? `${navigator.connection.rtt} ms (Effective)`: 'N/A');
-            } else {
-                setText('connection-type', 'Connection API not supported');
-                setText('connection-downlink', 'N/A');
-                setText('connection-rtt', 'N/A');
-            }
-        },
-        async startSpeedTest() {
-            // Very simplified "speed test"
-            const resultEl = getEl('speed-test-result');
-            const progressContainer = getEl('speed-test-progress');
-            const progressBar = progressContainer ? progressContainer.querySelector('.progress-bar') : null;
-            const btn = getEl('start-speed-test-btn');
-
-            if(!resultEl || !progressBar || !btn) return;
-
-            resultEl.textContent = 'Testing...';
-            btn.disabled = true;
-            progressContainer.style.display = 'block';
-            progressBar.style.width = '0%';
-
-            const fileSizeMB = 5; // 5MB test file
-            const testFileURL = `https://via.placeholder.com/${fileSizeMB*1024}x1.png?text=${Date.now()}`; // Cache buster
-            // A better source would be a static asset you control. placeholder.com might have rate limits or be slow.
-            // For a real test, use a dedicated endpoint or a file on your server.
-           
-            try {
-                const startTime = performance.now();
-                const response = await fetch(testFileURL, {cache: "no-store"});
-                
-                if(!response.body) {
-                     resultEl.textContent = 'ReadableStream not supported for progress.';
-                     btn.disabled = false;
-                     progressContainer.style.display = 'none';
-                    return;
-                }
-
-                const reader = response.body.getReader();
-                const contentLength = +response.headers.get('Content-Length'); // May not always be present with placeholders
-                let receivedLength = 0;
-
-                // Loop to read chunks
-                while(true) {
-                    const {done, value} = await reader.read();
-                    if (done) break;
-                    receivedLength += value.length;
-                    if(contentLength) { // Only show progress if Content-Length is known
-                         progressBar.style.width = `${(receivedLength / contentLength) * 100}%`;
-                    } else {
-                         progressBar.style.width = '50%'; // Indeterminate if no content length
-                         progressBar.textContent = `${(receivedLength / (1024*1024)).toFixed(1)}MB`; // show MB received
-                    }
-                }
-
-                const endTime = performance.now();
-                const durationSeconds = (endTime - startTime) / 1000;
-                let actualFileSizeMB = fileSizeMB; // Assume this if content-length isn't super reliable
-                if(contentLength) actualFileSizeMB = contentLength / (1024 * 1024); // Use actual if available
-
-                const speedMbps = (actualFileSizeMB * 8) / durationSeconds;
-                
-                resultEl.textContent = `${speedMbps.toFixed(2)} Mbps`;
-            } catch (error) {
-                console.error('Speed test error:', error);
-                resultEl.textContent = `Error: ${error.message}`;
-            } finally {
-                btn.disabled = false;
-                progressContainer.style.display = 'none';
-                 progressBar.style.width = '0%';
-            }
-        }
-
-    };
-
-    const BrowserInfo = {
-        init() {
-            this.getBrowserDetails();
-            this.getStorageInfo();
-            this.checkFeatures();
-        },
-        getBrowserDetails() {
-            if (navigator.userAgentData && navigator.userAgentData.brands) {
-                const primaryBrand = navigator.userAgentData.brands.find(b => !b.brand.includes("Not") && !b.brand.includes("Chromium")); // Heuristic
-                const engineBrand = navigator.userAgentData.brands.find(b => b.brand.includes("Chromium") || b.brand.includes("WebKit") || b.brand.includes("Gecko")); // Approx engine
-                 setText('browser-name-version-uad', primaryBrand ? `${primaryBrand.brand} ${primaryBrand.version}` : 'See Full UA');
-                 setText('browser-engine-uad', navigator.userAgentData.brands.map(b => `${b.brand} ${b.version}`).join(', ') || 'N/A'); // Shows all including engine ones
-                 setText('browser-mobile-uad', navigator.userAgentData.mobile ? 'Yes' : 'No');
-            } else {
-                 setText('browser-name-version-uad', 'UserAgentData API not supported for brands.');
-                 setText('browser-engine-uad', 'N/A');
-                 let ua = navigator.userAgent || "";
-                 // Basic UA parsing (less reliable)
-                 if (ua.includes("Firefox/")) setText('browser-name-version-uad', (ua.match(/Firefox\/([\d.]+)/) || [])[0] || "Firefox (UA)");
-                 else if (ua.includes("Chrome/") && !ua.includes("Edg/")) setText('browser-name-version-uad', (ua.match(/Chrome\/([\d.]+)/) || [])[0] || "Chrome (UA)");
-                 else if (ua.includes("Edg/")) setText('browser-name-version-uad', (ua.match(/Edg\/([\d.]+)/) || [])[0] || "Edge (UA)");
-                 else if (ua.includes("Safari/") && !ua.includes("Chrome/")) setText('browser-name-version-uad', (ua.match(/Version\/([\d.]+).*Safari/) || [])[0] || "Safari (UA)");
-
-            }
-
-            setText('browser-languages', navigator.languages ? navigator.languages.join(', ') : navigator.language);
-            setTextWithStatus('cookies-enabled', navigator.cookieEnabled ? 'Yes' : 'No', navigator.cookieEnabled ? 'success' : 'error');
-             try {
-                setTextWithStatus('java-enabled', navigator.javaEnabled() ? 'Yes' : 'No (Legacy)', navigator.javaEnabled() ? 'warning' : ''); // Java Applets mostly dead
-            } catch (e) { setText('java-enabled', 'Error'); }
-        },
-       async getStorageInfo() {
-            if (navigator.storage && navigator.storage.estimate) {
-                try {
-                    const estimate = await navigator.storage.estimate();
-                    setText('storage-quota', estimate.quota ? `${(estimate.quota / (1024 * 1024)).toFixed(2)} MB` : 'N/A');
-                    setText('storage-usage', estimate.usage ? `${(estimate.usage / (1024 * 1024)).toFixed(2)} MB` : 'N/A');
-                } catch (e) {
-                    console.warn("Storage estimate error:", e);
-                    setText('storage-quota', 'Error fetching'); setText('storage-usage', 'Error fetching');
-                }
-            } else {
-                 setText('storage-quota', 'API not supported'); setText('storage-usage', 'N/A');
-            }
-        },
-        checkFeatures() {
-            setTextWithStatus('wasm-support', typeof WebAssembly === 'object' ? 'Supported' : 'Not Supported', typeof WebAssembly === 'object' ? 'success' : 'error');
-            setTextWithStatus('serviceworker-support', 'serviceWorker' in navigator ? 'Supported' : 'Not Supported', 'serviceWorker' in navigator ? 'success' : 'error');
-            setTextWithStatus('geolocation-api', 'geolocation' in navigator ? 'Available' : 'Not Available', 'geolocation' in navigator ? 'success' : 'warning');
-        }
-    };
-
-    // --- Copy Report ---
-    const copyReportBtn = getEl('copy-report-btn');
-    if(copyReportBtn){
-        copyReportBtn.addEventListener('click', async () => {
-            let report = `Advanced System & Display Inspector Report (${new Date().toLocaleString()})\n`;
-            report += "============================================\n\n";
-
-            querySelAll('.tab-panel').forEach(panel => {
-                const titleEl = panel.querySelector('h2');
-                if (titleEl) report += `--- ${titleEl.firstChild.textContent.trim()} ---\n`;
-                
-                panel.querySelectorAll('.info-card').forEach(card => {
-                    const labelEl = card.querySelector('.card-label');
-                    let valueEl = card.querySelector('.card-value');
-                    
-                    if (labelEl && valueEl) {
-                         report += `${labelEl.textContent.trim()}: ${valueEl.textContent.trim()}\n`;
-                    } else if (labelEl && !valueEl) { // For cards that are just informational text
-                        report += `${labelEl.textContent.trim()}\n`;
-                         card.querySelectorAll('p').forEach(p => report += `  ${p.textContent.trim()}\n`);
-                    }
-                    // For subgrids like audio devices, media codecs
-                    card.querySelectorAll('.info-subgrid .info-card p').forEach(p_sub => { // Check if subgrid exists
-                        report += `  ${p_sub.textContent.trim().replace(/\s\s+/g, ' ')}\n`;
-                    });
-
+          Navigation: {
+            init() {
+              App.elements.navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  App.Navigation.navigateTo(e.currentTarget.dataset.target, e.currentTarget);
+                  if(App.state.isMobileSidebarOpen && window.innerWidth <= 768) { // Close mobile sidebar on nav
+                    App.state.isMobileSidebarOpen = false;
+                    App.elements.appSidebar.classList.remove('open');
+                  }
                 });
-                
-                // Specifically for subgrids if sections are structured that way (e.g. screen details manually added)
-                const subGrids = panel.querySelectorAll('.info-subgrid');
-                 subGrids.forEach(sg => {
-                    sg.querySelectorAll('.info-card').forEach(subCard => {
-                        let subCardText = "";
-                        subCard.querySelectorAll('div.card-label, p, strong').forEach(subEl => {
-                            subCardText += subEl.textContent.trim() + " ";
-                        });
-                        if(subCardText) report += `  - ${subCardText.replace(/\s\s+/g, ' ').trim()}\n`;
-                    });
-                 });
+              });
+              // Initial page load - set title for the default active panel
+              const activeLink = document.querySelector('.app-sidebar .nav-link.active');
+              if(activeLink && App.elements.pageTitle) App.elements.pageTitle.textContent = activeLink.querySelector('.link-text').textContent;
+            },
+            navigateTo(targetPanelId, clickedLink) {
+              App.elements.navLinks.forEach(l => l.classList.remove('active'));
+              clickedLink.classList.add('active');
 
+              App.elements.contentPanels.forEach(panel => panel.classList.remove('active'));
+              const targetPanel = App.getEl(targetPanelId);
+              if(targetPanel) targetPanel.classList.add('active');
 
-                report += "\n";
-            });
-
-            report += "============================================\n";
-            report += "Disclaimer: This information is for indicative purposes only and based on browser-reported data.\n";
-
-            try {
-                await navigator.clipboard.writeText(report);
-                copyReportBtn.title = "Report Copied!";
-                setTimeout(() => copyReportBtn.title = "Copy Report", 2000);
-            } catch (err) {
-                console.error('Failed to copy report: ', err);
-                copyReportBtn.title = "Copy Failed!";
-                 setTimeout(() => copyReportBtn.title = "Copy Report", 2000);
-                alert('Failed to copy report to clipboard. It has been logged to the console.');
-                console.log("--- REPORT --- \n", report);
+              if(App.elements.pageTitle) App.elements.pageTitle.textContent = clickedLink.querySelector('.link-text').textContent;
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+              }); // Scroll to top of new content panel
             }
-        });
-    }
+          },
 
+          Tooltips: {
+            init() {
+              document.querySelectorAll('[title]').forEach(el => {
+                let originalTitle = el.title || '';
+                el.addEventListener('mouseenter', (e) => {
+                  const currentTitle = el.getAttribute('data-dynamic-title') || originalTitle; // Use dynamic if set
+                  if(currentTitle) {
+                    el.setAttribute('data-original-title-store', originalTitle); //Store what was initially from HTML
+                    el.removeAttribute('title');
+                    App.Tooltips.show(e.currentTarget, currentTitle);
+                  }
+                });
+                el.addEventListener('mouseleave', (e) => {
+                  App.Tooltips.hide();
+                  if(el.getAttribute('data-original-title-store')) {
+                    el.setAttribute('title', el.getAttribute('data-original-title-store'));
+                    el.removeAttribute('data-original-title-store');
+                  }
+                  el.removeAttribute('data-dynamic-title'); // Clear dynamic title
+                });
+              });
+            },
+            show(element, text) {
+              const tooltipEl = App.elements.tooltip;
+              if(!tooltipEl || !element || !text) return;
+              tooltipEl.textContent = text;
+              const rect = element.getBoundingClientRect();
 
-    // --- Initialize All Modules ---
-    DisplayInfo.init();
-    SystemInfo.init();
-    HardwareInfo.init();
-    MediaCapabilitiesInfo.init(); // Contains async calls, UI will update gradually/on button click
-    ConnectivityInfo.init();
-    BrowserInfo.init();
-    
-    // Set current year in footer
-    if(getEl('current-year')) getEl('current-year').textContent = new Date().getFullYear();
+              tooltipEl.style.left = `${rect.left + window.scrollX + (rect.width / 2) - (tooltipEl.offsetWidth / 2)}px`;
+              tooltipEl.style.top = `${rect.bottom + window.scrollY + 8}px`; // 8px below
+              tooltipEl.classList.add('visible');
+            },
+            hide() {
+              if(App.elements.tooltip) App.elements.tooltip.classList.remove('visible');
+            },
+            // Special function to update tooltip text dynamically, e.g., for "Copied!" messages
+            updateAndShow(element, text, duration = 2000) {
+              element.setAttribute('data-dynamic-title', text); // Store new dynamic title
+              App.Tooltips.show(element, text); // Show it immediately
 
-    // Activate the first tab by default
-    if(tabLinks.length > 0 && tabPanels.length > 0){
-      //  tabLinks[0].click(); // This sets up the default tab panel - not needed if HTML has default active class
-    }
+              if(App.state.tooltipTimeout) clearTimeout(App.state.tooltipTimeout);
+              App.state.tooltipTimeout = setTimeout(() => {
+                App.Tooltips.hide();
+                element.removeAttribute('data-dynamic-title'); // Clear dynamic after timeout
+              }, duration);
+            }
+          },
 
-});
+          Display: {
+            init() {
+              this.getPrimaryInfo();
+              this.getAdvancedDisplayInfo();
+              App.elements.startRefreshRateTestBtn?.addEventListener('click', () => this.estimateRefreshRate(false));
+              App.elements.loadMultiScreenBtn?.addEventListener('click', () => this.getMultiScreenDetails());
+              this.estimateRefreshRate(true); // Initial quick estimate
+            },
+            getPrimaryInfo() {
+              try {
+                App.setText('currentResolution', `${screen.width} x ${screen.height}`);
+                App.setText('availableResolution', `${window.innerWidth} x ${window.innerHeight}`);
+                App.setText('colorDepthVal', `${screen.colorDepth} bits`);
+                App.setText('pixelRatioVal', window.devicePixelRatio || 'N/A');
+                if(screen.orientation) {
+                  App.setText('orientationVal', screen.orientation.type);
+                  screen.orientation.addEventListener('change', () => App.setText('orientationVal', screen.orientation.type));
+                } else {
+                  App.handleErrorText('orientationVal', 'Orientation API N/A');
+                }
+              } catch (e) {
+                console.error("Error in Display.getPrimaryInfo:", e);
+                App.handleErrorText('currentResolution');
+              }
+            },
+            getAdvancedDisplayInfo() {
+              const touchSupport = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+              App.setText('touchSupportVal', touchSupport ? `Yes (${navigator.maxTouchPoints || 'Unknown'} points)` : 'No', {
+                status: touchSupport ? 'success' : 'neutral'
+              });
+              const checkMediaQuery = (mq, id, successMsg, failMsg, standardMsg) => {
+                if(window.matchMedia) {
+                  let result = failMsg;
+                  let sClass = 'neutral';
+                  if(window.matchMedia(`(${mq}: high)`).matches) {
+                    result = `${successMsg} (High)`;
+                    sClass = 'success';
+                  } else if(window.matchMedia(`(${mq}: p3)`).matches) {
+                    result = `${successMsg} (Display P3)`;
+                    sClass = 'success';
+                  } else if(window.matchMedia(`(${mq}: rec2020)`).matches) {
+                    result = `${successMsg} (Rec.2020)`;
+                    sClass = 'success';
+                  } else if(window.matchMedia(`(${mq}: standard)`).matches || window.matchMedia(`(${mq}: srgb)`).matches) {
+                    result = standardMsg;
+                    sClass = 'neutral'
+                  }
+                  App.setText(id, result, {
+                    status: sClass
+                  });
+                } else App.handleErrorText(id, 'Media Query API N/A');
+              };
+              checkMediaQuery('dynamic-range', 'hdrStatusVal', 'HDR Capable', 'HDR Not Detected (SDR)', 'SDR (Standard)');
+              checkMediaQuery('color-gamut', 'colorGamutStatusVal', 'Wide Gamut', 'Color Gamut Undetermined', 'Likely sRGB');
+            },
+            // Refresh Rate... (slightly adapted, mostly state management)
+            estimateRefreshRate(quickEstimate = false) {
+              /* Same as before, use App.state & ELs */
+              if(App.state.isFpsEstimating && !quickEstimate) return;
+              App.state.isFpsEstimating = true;
+              const fpsEl = App.getEl('estimatedFpsVal'),
+                btn = App.elements.startRefreshRateTestBtn;
+              const visualizerCanvas = App.getEl('fpsVisualizer');
+              if(visualizerCanvas && !App.state.fpsVisualizerCtx) App.state.fpsVisualizerCtx = visualizerCanvas.getContext('2d');
+              App.state.fpsFrames = [];
+              if(!quickEstimate) {
+                if(fpsEl) fpsEl.textContent = 'Testing...';
+                if(btn) btn.disabled = true;
+              }
+              let frameCount = 0;
+              const testDuration = quickEstimate ? 350 : 2000;
+              const startTime = performance.now();
+              App.state.fpsLastFrameTime = startTime;
+              const animate = (currentTime) => {
+                frameCount++;
+                const delta = currentTime - App.state.fpsLastFrameTime;
+                App.state.fpsLastFrameTime = currentTime;
+                if(delta <= 0) {
+                  requestAnimationFrame(animate);
+                  return;
+                } // Skip if delta is zero/negative
+                const currentFPS = 1000 / delta;
+                if(!quickEstimate || App.state.fpsFrames.length < 50) App.state.fpsFrames.push(currentFPS);
+                App.state.fpsVisualizerFrames.push(currentFPS);
+                if(App.state.fpsVisualizerFrames.length > 50) App.state.fpsVisualizerFrames.shift();
+                this.drawFpsVisualizer();
+                if(performance.now() - startTime < testDuration) App.state.fpsRafId = requestAnimationFrame(animate);
+                else {
+                  App.state.isFpsEstimating = false;
+                  const avgFps = App.state.fpsFrames.length ? App.state.fpsFrames.reduce((a, b) => Math.min(300, a) + Math.min(300, b), 0) / App.state.fpsFrames.length : 0; // Cap individual frame contributions to avoid extreme outliers biasing avg upwards
+                  if(fpsEl) fpsEl.textContent = `${Math.round(avgFps)} Hz (${quickEstimate ? 'Quick Est.' : 'Avg'})`;
+                  if(btn && !quickEstimate) btn.disabled = false;
+                  if(!quickEstimate) App.state.fpsFrames = []; // Reset for potential next full test
+                }
+              };
+              if(App.state.fpsRafId) cancelAnimationFrame(App.state.fpsRafId);
+              App.state.fpsRafId = requestAnimationFrame(animate);
+            },
+            drawFpsVisualizer() {
+              /* Mostly same, uses App.state for ctx and frames */
+              const ctx = App.state.fpsVisualizerCtx;
+              if(!ctx) return;
+              const canvas = ctx.canvas,
+                W = canvas.width,
+                H = canvas.height;
+              ctx.clearRect(0, 0, W, H);
+              const barWidth = W / App.state.fpsVisualizerFrames.length;
+              const maxFpsGraph = 165;
+              ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#007bff';
+              App.state.fpsVisualizerFrames.forEach((val, i) => {
+                const barHeight = Math.max(1, Math.min(H, ((val || 0) / maxFpsGraph) * H)); /* Ensure bar is visible */
+                ctx.fillRect(i * barWidth, H - barHeight, Math.max(1, barWidth - 0.5), barHeight); // -0.5 for slight gap
+              });
+            },
+            async getMultiScreenDetails() {
+              /* Adapted to use App namespace */
+              const containerEl = App.getEl('multiScreenDetailsGrid'),
+                containerWrapper = App.getEl('multiScreenDetailsContainer');
+              const btn = App.elements.loadMultiScreenBtn;
+              if(!containerEl || !btn || !containerWrapper) return;
+              btn.disabled = true;
+              const originalBtnText = btn.innerHTML;
+              btn.innerHTML += ' (Loading...)';
+              containerWrapper.style.display = 'block';
+              containerEl.innerHTML = '<div class="info-card"><p class="card-value">Querying screen details...</p></div>';
+
+              try {
+                const hasGetScreenDetails = typeof window.getScreenDetails === 'function';
+                const hasWindowManagement = navigator.windowManagement && typeof navigator.windowManagement.getScreenDetails === 'function';
+
+                if(!hasGetScreenDetails && !hasWindowManagement) {
+                  containerEl.innerHTML = '<div class="info-card"><p class="card-value value-warning">Screen Details API not supported.</p></div>';
+                  return;
+                }
+                const screenDetails = await (hasGetScreenDetails ? window.getScreenDetails() : navigator.windowManagement.getScreenDetails());
+                const renderFn = (details) => {
+                  containerEl.innerHTML = ''; // Clear
+                  if(!details.screens || details.screens.length === 0) {
+                    containerEl.innerHTML = '<div class="info-card"><p class="card-value">No extended screen information available.</p></div>';
+                    return;
+                  }
+                  details.screens.forEach((s, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'info-card';
+                    card.innerHTML = `
+                                <div class="card-label">Screen ${i + 1} ${s.isPrimary ? '<strong class="value-success">(Primary)</strong>' : ''} ${s.isInternal ? '(Internal)' : '(External)'}</div>
+                                <p><strong>Label:</strong> <span class="card-value code-text">${s.label || (s.id ? `ID: ${s.id.slice(0,20)}...` : 'N/A')}</span></p>
+                                <p><strong>Resolution:</strong> <span class="card-value">${s.width}x${s.height} @ ${s.colorDepth || screen.colorDepth} bit</span></p>
+                                <p><strong>Available Area:</strong> <span class="card-value">${s.availWidth}x${s.availHeight}</span></p>
+                                <p><strong>Pixel Ratio:</strong> <span class="card-value">${s.devicePixelRatio || window.devicePixelRatio}</span></p>
+                                <p><strong>Orientation:</strong> <span class="card-value">${s.orientation ? s.orientation.type : 'N/A'}</span></p>`;
+                    containerEl.appendChild(card);
+                  });
+                  const primary = details.screens.find(s => s.isPrimary);
+                  if(primary) App.setText('currentResolution', `${primary.width}x${primary.height} (from Screen Details)`);
+                };
+                renderFn(screenDetails);
+                screenDetails.addEventListener('screenschange', (event) => {
+                  console.log('screenschange event:', event);
+                  renderFn(screenDetails)
+                });
+              } catch (e) {
+                console.error("Multi-screen error:", e);
+                containerEl.innerHTML = `<div class="info-card"><p class="card-value value-error">Error: ${e.message}. Ensure permission is granted.</p></div>`;
+              } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+              }
+            }
+          }, // End Display Module
+
+          SystemOS: {
+            /* Adapted to use App */
+            init() {
+              this.getOSInfo();
+              this.getBatteryInfo();
+            },
+            getOSInfo() {
+              try {
+                App.setText('osPlatformVal', navigator.platform || 'N/A');
+                App.setText('userAgentFullVal', navigator.userAgent || 'N/A', {
+                  isCode: true
+                });
+                if(navigator.userAgentData) {
+                  const uad = navigator.userAgentData;
+                  App.setText('osUadPlatformVal', uad.platform || 'N/A');
+                  App.setText('osUadArchVal', uad.architecture || 'N/A');
+                  let osVer = uad.platformVersion || "";
+                  if(uad.platform === "Windows" && osVer) {
+                    const build = parseInt((osVer.match(/\.([0-9]+)$/) || [])[1] || (osVer.split('.')[2])); // Try to get build after second dot, or third part.
+                    let winName = "Windows";
+                    if(build >= 22000) winName = "Windows 11 Family";
+                    else if(build >= 10240) winName = "Windows 10 Family";
+                    osVer = `${osVer} (${winName})`;
+                  }
+                  App.setText('osUadVersionVal', osVer || uad.platformVersion || "N/A", {
+                    isCode: true
+                  });
+                } else {
+                  ['osUadPlatformVal', 'osUadVersionVal', 'osUadArchVal'].forEach(id => App.handleErrorText(id, 'UserAgentData API N/A'));
+                }
+                const ua = navigator.userAgent.toLowerCase();
+                let consoleHint = 'Not Detected'; /* Add more specific checks if possible */
+                if(ua.includes('playstation 5') || ua.includes('ps5')) consoleHint = 'PlayStation 5';
+                else if(ua.includes('playstation 4') || ua.includes('ps4')) consoleHint = 'PlayStation 4'; /* ... more ...*/
+                App.setText('gameConsoleHintVal', consoleHint, {
+                  status: consoleHint !== 'Not Detected' ? 'warning' : 'neutral'
+                });
+              } catch (e) {
+                console.error("OS Info Error:", e);
+              }
+            },
+            async getBatteryInfo() {
+              /* Adapted to use App */
+              const statusElId = 'batteryStatusVal',
+                barContainer = App.getEl('batteryLevelBarContainer'),
+                bar = App.getEl('batteryLevelBar');
+              if(!('getBattery' in navigator)) {
+                App.setText(statusElId, 'Battery API N/A', {
+                  status: 'warning'
+                });
+                if(barContainer) barContainer.style.display = 'none';
+                return;
+              }
+              try {
+                const battery = await navigator.getBattery();
+                const updateFn = () => {
+                  let text = `${(battery.level * 100).toFixed(0)}%`;
+                  if(battery.charging) text += ` (${battery.chargingTime !== Infinity ? msToMinSec(battery.chargingTime * 1000) + ' to full, ' : ''}Charging)`;
+                  else text += ` (${battery.dischargingTime !== Infinity ? msToMinSec(battery.dischargingTime * 1000) + ' left, ' : ''}Discharging)`;
+                  if(barContainer && bar) {
+                    barContainer.style.display = 'block';
+                    bar.style.width = `${battery.level * 100}%`;
+                    bar.style.backgroundColor = (battery.level <= 0.1 && !battery.charging) ? 'var(--error-color)' : (battery.level <= 0.2 && !battery.charging) ? 'var(--warning-color)' : 'var(--success-color)';
+                  }
+                  App.setText(statusElId, text, {
+                    status: battery.level <= 0.2 && !battery.charging ? 'error' : 'neutral'
+                  });
+                };
+                const msToMinSec = (ms) => {
+                  if(ms === Infinity || ms === 0) return '?';
+                  const min = Math.floor(ms / 60000);
+                  const sec = Math.floor((ms % 60000) / 1000);
+                  return `${min}m ${sec}s`;
+                }
+                updateFn();
+                ['levelchange', 'chargingchange', 'chargingtimechange', 'dischargingtimechange'].forEach(ev => battery.addEventListener(ev, updateFn));
+              } catch (e) {
+                console.error("Battery API Error:", e);
+                App.setText(statusElId, 'Error accessing Battery API', {
+                  status: 'error'
+                });
+                if(barContainer) barContainer.style.display = 'none';
+              }
+            }
+          }, // End SystemOS Module
+
+          Hardware: {
+            /* Adapted to use App */
+            init() {
+              App.setText('cpuCoresVal', navigator.hardwareConcurrency || 'N/A');
+              App.setText('deviceMemoryVal', navigator.deviceMemory ? `${navigator.deviceMemory} GB (Minimum Reported)` : 'Device Memory API N/A');
+              this.getWebGLContextAndInfo(); // Combined step
+              this.checkEMEHDCP();
+              // WebGL Extensions load button
+              App.elements.loadWebGLExtensionsBtn?.addEventListener('click', () => this.listWebGLExtensions());
+            },
+            getWebGLContextAndInfo() {
+              const canvas = document.createElement('canvas');
+              try {
+                App.state.webGlContext = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+              } catch (e) {}
+              const gl = App.state.webGlContext;
+              if(gl) {
+                App.setText('webglVersionVal', gl.getParameter(gl.VERSION).match(/WebGL (\d\.\d)/)?.[1] || '1.0 (Fallback)', {
+                  isCode: true
+                });
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if(debugInfo) {
+                  App.setText('gpuRendererVal', gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'N/A', {
+                    isCode: true
+                  });
+                  const angle = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                  App.setText('webglAngleVal', angle && angle.toLowerCase().includes('angle') ? angle : 'N/A or Not ANGLE', {
+                    isCode: true
+                  });
+                } else {
+                  App.handleErrorText('gpuRendererVal', 'Debug Info N/A');
+                  App.setText('webglAngleVal', 'N/A', {
+                    isCode: true
+                  });
+                }
+              } else {
+                ['webglVersionVal', 'gpuRendererVal', 'webglAngleVal'].forEach(id => App.handleErrorText(id, 'WebGL N/A'));
+              }
+            },
+            listWebGLExtensions() {
+              const gl = App.state.webGlContext;
+              const listElId = 'webGlExtensionsList';
+              if(gl) {
+                const extensions = gl.getSupportedExtensions();
+                if(extensions && extensions.length > 0) {
+                  App.setText(listElId, extensions.join('\n'), {
+                    isCode: true
+                  });
+                } else {
+                  App.setText(listElId, 'No extensions reported or WebGL not available.', {
+                    isCode: true
+                  });
+                }
+              } else {
+                App.setText(listElId, 'WebGL context not available to query extensions.', {
+                  isCode: true,
+                  status: 'warning'
+                });
+              }
+            },
+            async checkEMEHDCP() {
+              /* Adapted to use App */
+              if(!navigator.requestMediaKeySystemAccess) {
+                App.handleErrorText('emeHdcpStatusVal', 'EME API N/A');
+                return;
+              }
+              const config = [{
+                videoCapabilities: [{
+                  contentType: 'video/mp4; codecs="avc1.42E01E"',
+                  hdcp: 'required'
+                }]
+              }];
+              try {
+                await navigator.requestMediaKeySystemAccess('com.widevine.alpha', config);
+                App.setText('emeHdcpStatusVal', 'Widevine + HDCP "required" Supported', {
+                  status: 'success'
+                });
+              } catch (e) {
+                App.setText('emeHdcpStatusVal', 'Widevine HDCP Test Failed/Unsupported', {
+                  status: 'warning'
+                });
+                console.warn("EME Test Error:", e);
+              }
+            }
+          }, // End Hardware Module
+
+          Media: {
+            /* Adapted to use App */
+            init() {
+              App.elements.loadAudioDevicesBtn?.addEventListener('click', () => this.getAudioDevices());
+              App.elements.checkVideoCodecsBtn?.addEventListener('click', () => this.checkAllVideoCodecs());
+              App.elements.checkAudioCodecsBtn?.addEventListener('click', () => this.checkAllAudioCodecs());
+              App.elements.checkDrmBtn?.addEventListener('click', () => this.checkDRMSupport());
+            },
+            async getAudioDevices() {
+              /* Uses App.setHTMLList for cleaner output */
+              const listId = 'audioDevicesList';
+              App.getEl(listId).innerHTML = '<div class="list-item">Querying...</div>';
+              if(!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                App.setHTMLList(listId, [], 'info-item value-warning', 'MediaDevices API N/A');
+                return;
+              }
+              try {
+                await navigator.mediaDevices.getUserMedia({
+                  audio: true
+                });
+              } catch (e) {
+                console.warn("Mic permission potentially needed for full list.");
+              }
+              try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const outputs = devices.filter(d => d.kind === 'audiooutput').map(d => `<strong>${d.label||`Output`}</strong> (ID: ${d.deviceId.slice(0,10)}...)`);
+                App.setHTMLList(listId, outputs, 'list-item', 'No audio output devices identified.');
+              } catch (e) {
+                App.setHTMLList(listId, [], 'list-item value-error', `Error: ${e.message}`);
+              }
+            },
+            async _checkCodec(config, name, containerId, type = 'decoding') {
+              /* Uses App.setHTMLList with a callback */
+              const container = App.getEl(containerId);
+              if(!container) return;
+              if(!document.getElementById(`${name.replace(/\s/g,'')}_status_item`)) // Prevent duplicates on re-click
+                container.innerHTML += `<div class="list-item" id="${name.replace(/\s/g,'')}_status_item">Checking ${name}...</div>`;
+
+              if(!('mediaCapabilities' in navigator)) {
+                container.querySelector(`#${name.replace(/\s/g,'')}_status_item`).innerHTML = `<strong class="value-warning">${name}:</strong> MediaCaps API N/A`;
+                return;
+              }
+              try {
+                const res = await navigator.mediaCapabilities[`${type}Info`](config);
+                let text = res.supported ? `Supported (Smooth: ${res.smooth}, Power Eff: ${res.powerEfficient})` : 'Not Supported';
+                let stat = res.supported ? 'success' : 'error';
+                container.querySelector(`#${name.replace(/\s/g,'')}_status_item`).innerHTML = `<strong class="value-${stat}">${name}:</strong> ${text}<br/><code>${(config.video ? config.video.contentType : config.audio.contentType)}</code>`;
+              } catch (e) {
+                container.querySelector(`#${name.replace(/\s/g,'')}_status_item`).innerHTML = `<strong class="value-error">${name}: Error (${e.name})</strong>`
+              }
+            },
+            async checkAllVideoCodecs() {
+              /* Calls _checkCodec for each */
+              const listId = 'videoCodecsSupportList';
+              App.getEl(listId).innerHTML = ''; // Clear first
+              const commonCodecs = [{
+                  name: 'H.264 (AVC) Baseline',
+                  type: 'video',
+                  config: {
+                    contentType: 'video/mp4; codecs="avc1.42E01E"'
+                  }
+                },
+                {
+                  name: 'H.265 (HEVC) Main',
+                  type: 'video',
+                  config: {
+                    contentType: 'video/mp4; codecs="hvc1.1.6.L93.B0"'
+                  }
+                },
+                {
+                  name: 'VP9 Profile 0',
+                  type: 'video',
+                  config: {
+                    contentType: 'video/webm; codecs="vp09.00.10.08"'
+                  }
+                },
+                {
+                  name: 'AV1 Main Profile',
+                  type: 'video',
+                  config: {
+                    contentType: 'video/mp4; codecs="av01.0.04M.08"'
+                  }
+                }
+              ];
+              commonCodecs.forEach(c => this._checkCodec({
+                type: c.type,
+                video: c.config
+              }, c.name, listId));
+            },
+            async checkAllAudioCodecs() {
+              /* Calls _checkCodec for each */
+              const listId = 'audioCodecsSupportList';
+              App.getEl(listId).innerHTML = '';
+              const commonCodecs = [{
+                  name: 'AAC-LC',
+                  type: 'audio',
+                  config: {
+                    contentType: 'audio/mp4; codecs="mp4a.40.2"'
+                  }
+                },
+                {
+                  name: 'Opus',
+                  type: 'audio',
+                  config: {
+                    contentType: 'audio/webm; codecs="opus"'
+                  }
+                },
+                {
+                  name: 'FLAC',
+                  type: 'audio',
+                  config: {
+                    contentType: 'audio/flac'
+                  }
+                },
+                {
+                  name: 'MP3',
+                  type: 'audio',
+                  config: {
+                    contentType: 'audio/mpeg'
+                  }
+                }
+              ];
+              commonCodecs.forEach(c => this._checkCodec({
+                type: c.type,
+                audio: c.config
+              }, c.name, listId));
+            },
+            async checkDRMSupport() {
+              /* Adapted to use App.setHTMLList with a custom render*/
+              const listId = 'drmSupportList';
+              App.getEl(listId).innerHTML = '<div class="list-item">Checking...</div>';
+              if(!navigator.requestMediaKeySystemAccess) {
+                App.setHTMLList(listId, [], 'list-item value-warning', 'MediaKeySystemAccess API N/A');
+                return;
+              }
+              const systems = [{
+                name: 'Widevine',
+                id: 'com.widevine.alpha'
+              }, {
+                name: 'PlayReady',
+                id: 'com.microsoft.playready'
+              }, {
+                name: 'FairPlay',
+                id: 'com.apple.fps.1_0'
+              }];
+              let results = [];
+              for(const s of systems) {
+                try {
+                  await navigator.requestMediaKeySystemAccess(s.id, [{
+                    videoCapabilities: [{
+                      contentType: 'video/mp4; codecs="avc1.4D401E"'
+                    }]
+                  }]);
+                  results.push(`<strong class="value-success">${s.name}:</strong> Supported`);
+                } catch (e) {
+                  results.push(`<strong>${s.name}:</strong> Not Supported/Error`);
+                }
+              }
+              App.setHTMLList(listId, results, 'list-item');
+            }
+          }, // End Media Module
+
+          Connectivity: {
+            /* Adapted */
+            init() {
+              this.updateStatus();
+              if(navigator.connection) navigator.connection.addEventListener('change', () => this.updateStatus());
+              window.addEventListener('online', () => this.updateStatus(true));
+              window.addEventListener('offline', () => this.updateStatus(false));
+              App.elements.startSpeedTestBtn?.addEventListener('click', () => this.startSpeedTest());
+            },
+            updateStatus(onlineState = null) {
+              const isOnline = onlineState !== null ? onlineState : navigator.onLine;
+              App.setText('onlineStatusVal', isOnline ? 'Online' : 'Offline', {
+                status: isOnline ? 'success' : 'error'
+              });
+              if(navigator.connection) {
+                App.setText('connectionTypeVal', navigator.connection.effectiveType || 'N/A');
+                App.setText('connectionDownlinkVal', navigator.connection.downlink ? `${navigator.connection.downlink} Mbps (Effective)` : 'N/A');
+                App.setText('connectionRttVal', navigator.connection.rtt !== undefined ? `${navigator.connection.rtt} ms (Effective)` : 'N/A');
+                App.setText('connectionSaveDataVal', navigator.connection.saveData ? 'Enabled' : 'Disabled', {
+                  status: navigator.connection.saveData ? 'warning' : 'neutral'
+                });
+              } else ['connectionTypeVal', 'connectionDownlinkVal', 'connectionRttVal', 'connectionSaveDataVal'].forEach(id => App.handleErrorText(id, 'Net API N/A'));
+            },
+            // Note: _actualSpeedTestUrl must point to something CORS-enabled and large enough. Public option is unstable.
+            async startSpeedTest() {
+                /* Adapted, mostly same */
+                const resultId = 'speedTestResultVal',
+                  progContainer =
