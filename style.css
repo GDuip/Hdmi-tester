@@ -312,7 +312,7 @@
     .page-header h1 {
       font-size: 1.5rem;
       font-weight: 600;
-      color: var(--text_primary);
+      color: var(--text-primary); /* CORRECTED: Was --text_primary */
     }
 
     .mobile-sidebar-toggle {
@@ -340,9 +340,7 @@
       text-align: center;
     }
 
-    html[data-theme="dark"] .global-disclaimer {
-      background-color: color-mix(in srgb, var(--warning-color) 20%, var(--bg-primary));
-    }
+    /* REMOVED: Redundant dark theme rule for global-disclaimer */
 
     .global-disclaimer strong {
       font-weight: 600;
@@ -533,7 +531,7 @@
 
 
     /* SPECIFIC ELEMENT STYLES (e.g., visualizer, progress bar - slightly refined) */
-    #fps-visualizer {
+    #fpsVisualizer { /* CORRECTED: Was #fps-visualizer to match HTML id="fpsVisualizer" */
       border: 1px solid var(--border-secondary);
       margin-top: 0.75rem;
       border-radius: var(--radius-md);
